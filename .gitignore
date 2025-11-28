@@ -89,3 +89,5 @@ nb-configuration.xml
 ##############################
 *.log
 *.txt
+# Ignore Gradle build output directory
+build
