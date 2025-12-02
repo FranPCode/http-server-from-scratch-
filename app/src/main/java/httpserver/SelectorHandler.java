@@ -71,7 +71,6 @@ public class SelectorHandler {
         buffer.flip();
 
         StringBuilder message = state.getAcumulated();
-
         while (buffer.hasRemaining()) {
             message.append((char) buffer.get());
         }

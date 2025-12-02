@@ -1,7 +1,10 @@
 package httpserver;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+
+import httpserver.parsers.RequestParser;
 
 public class Request {
 
@@ -37,67 +40,32 @@ public class Request {
         return body;
     }
 
-    private void parse(String request) throws RuntimeException {
-        String[] parts = request.split("\r\n\r\n");
+    private void parse(String request) throws IllegalArgumentException {
+        String[] parts = request.split("\r\n\r\n", 2);
 
         String[] head = parts[0].split("\r\n");
         this.body = parts.length > 1 ? parts[1] : "";
 
-        Map<String, String> requestLine = RequestLine
+        Map<String, String> requestLine = RequestParser.requestLine(head[0]);
+        this.method = requestLine.get("method");
+        this.resource = requestLine.get("resource");
+        this.protocolVersion = requestLine.get("protocol-version");
 
-        for (int i = 1; i < head.length; i++) {
-            String[] fieldLine = head[i].split(": ", 2);
-            String headerName = fieldLine[0];
-            String headerValue = fieldLine[1];
-
-            if (headerValue.isEmpty()) {
-                throw new RuntimeException("header value is empty");
-            }
-
-            headers.put(
-                    headerName.toLowerCase().trim(),
-                    headerValue.trim());
-        }
+        String[] fieldLines = Arrays.copyOfRange(head, 1, head.length);
+        this.headers = RequestParser.headers(fieldLines);
 
         if (headers.containsKey("content-lenght")) {
             int contentLenght = Integer.parseInt(headers.get("content-lenght"));
             if (body.length() != contentLenght) {
-                throw new RuntimeException("content-lenght and body mismatch lenght");
+                throw new IllegalArgumentException("content-lenght and body mismatch lenght");
             }
         }
 
+        this.headers = headers;
         this.completed = true;
     }
 
     public boolean isCompleted() {
         return this.completed;
-    }
-
-    private static class RequestLine {
-
-        public Map<String, String> parse(String line) {
-            String[] requestLine = line.split(" ");
-
-            int numberParts = 3;
-            if (requestLine.length != numberParts) {
-                throw new RuntimeException("request line is invalid");
-            }
-
-            String method = requestLine[0].trim();
-            String resource = requestLine[1].trim();
-            String protocolVersion = requestLine[2].trim();
-
-            if (!method.matches("[A-Z]+")
-                    || !resource.startsWith("/")
-                    || !protocolVersion.matches("HTTP/[0-9]\\.[0-9]")) {
-                throw new RuntimeException("invalid requestline syntaxis");
-            }
-
-            Map<String, String> items = new HashMap<>();
-            items.put("method", method);
-            items.put("resource", resource);
-            items.put("protocol-version", protocolVersion);
-            return items;
-        }
     }
 }
