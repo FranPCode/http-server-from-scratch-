@@ -86,9 +86,7 @@ public class SelectorHandler {
                 buffer.clear();
                 key.interestOps(SelectionKey.OP_WRITE);
             }
-
         }
-
     }
 
     public void write(SelectionKey key) throws IOException {
@@ -97,28 +95,14 @@ public class SelectorHandler {
         ByteBuffer buffer = state.getBuffer();
         Request request = state.getRequest();
 
+        Response response = new Response(buffer);
         if (request.getMethod().equals("GET")) {
-            byte[] bodyBytes = "Hello, putita!\r\n".getBytes();
-            String host = "Host: " + request.getHeaders().get("host");
-            byte[] hostBytes = host.getBytes();
-            buffer.put("HTTP/1.1 200 OK\r\n".getBytes());
-            buffer.put(hostBytes);
-            buffer.put("Content-Type: text/plain\r\n".getBytes());
-            buffer.put(("Content-Length: " + bodyBytes.length + "\r\n").getBytes());
-            buffer.put("\r\n".getBytes());
-            buffer.put(bodyBytes);
-
+            response.status(200).body("good request bro").send();
         } else {
-            byte[] bodyBytes = "no puedes pasar!\r\n".getBytes();
-            buffer.put("HTTP/1.1 405 METHOD NOT ALLOWED\r\n".getBytes());
-            buffer.put("Content-Type: text/plain\r\n".getBytes());
-            buffer.put(("Content-Length: " + bodyBytes.length + "\r\n").getBytes());
-            buffer.put("\r\n".getBytes());
-            buffer.put(bodyBytes);
+            response.status(405).body("wtf with this request bro").send();
         }
 
         buffer.flip();
-
         client.write(buffer);
 
         buffer.clear();

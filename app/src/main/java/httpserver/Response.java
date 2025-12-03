@@ -10,8 +10,17 @@ public class Response {
     private String status;
     private Map<String, String> headers = new HashMap<>();
     private String body;
+    private ByteBuffer buffer;
 
-    public Response status(int statusCode) {
+    public Response(ByteBuffer buffer) {
+        this.buffer = buffer;
+    }
+
+    public Response status(int statusCode) throws IllegalArgumentException {
+        if (statusCode < 100 || statusCode > 600) {
+            throw new IllegalArgumentException("invalid status code");
+        }
+
         switch (statusCode) {
             case 200 -> this.status = "200 OK";
             case 405 -> this.status = "405 METHOD NOT ALLOWED";
@@ -21,28 +30,32 @@ public class Response {
     }
 
     public Response body(String body) {
+        if (body.isEmpty()) {
+            throw new IllegalArgumentException("body is empty");
+        }
+
         this.body = body;
         this.headers.put("Content-Lenght", String.valueOf(body.length()));
+        this.headers.put("Content-Type", "*/*");
 
         return this;
     }
 
     public ByteBuffer send() {
-        ByteBuffer buffer = ByteBuffer.allocateDirect(2048);
-        String statusLine = this.protocolVersion + " " + this.status + "\r\n";
+        StringBuilder message = new StringBuilder();
 
-        buffer.put(statusLine.getBytes());
+        message.append(String.format("%s %s\r\n", this.protocolVersion, this.status));
         for (Map.Entry<String, String> entry : headers.entrySet()) {
-            String fieldLine = entry.getKey() + ": " + entry.getValue() + "\r\n";
-            buffer.put(fieldLine.getBytes());
+            message.append(String.format("%s: %s\r\n", entry.getKey(), entry.getValue()));
         }
 
-        buffer.put("\r\n".getBytes());
+        message.append("\r\n\r\n");
 
         if (!this.body.isEmpty()) {
-            buffer.put(this.body.getBytes());
+            message.append(this.body);
         }
 
+        this.buffer.put(message.toString().getBytes());
         return buffer;
     }
 }
