@@ -8,11 +8,15 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 
+import httpserver.router.Router;
+
 public class SelectorHandler {
     private Selector selector;
+    private Router router;
 
-    public SelectorHandler() throws IOException {
+    public SelectorHandler(Router router) throws IOException {
         this.selector = Selector.open();
+        this.router = router;
     }
 
     public void start() throws IOException {
@@ -95,13 +99,15 @@ public class SelectorHandler {
         ByteBuffer buffer = state.getBuffer();
         Request request = state.getRequest();
 
-        Response response = new Response(buffer);
-        if (request.getMethod().equals("GET")) {
-            response.status(200).body("good request bro").send();
+        Response response;
+        if (router.exists(request.getResource())) {
+            response = router.resolve(request);
         } else {
-            response.status(405).body("wtf with this request bro").send();
+            response = new Response().status(404).html("<h1>Pagina no encontrada</h1>");
         }
 
+        response.setBuffer(buffer);
+        response.build();
         buffer.flip();
         client.write(buffer);
 

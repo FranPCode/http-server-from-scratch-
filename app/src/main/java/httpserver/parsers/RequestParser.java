@@ -44,9 +44,9 @@ public class RequestParser {
             String headerValue = fieldLine[1];
 
             if (headerValue.isEmpty()
-                    || !headerName.matches("^[A-Z][a-z]*(?:-[A-Z][a-z]*)*$")) {
+                    || !headerName.matches("^[A-Za-z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)*$")) {
 
-                throw new IllegalArgumentException("header value is empty");
+                throw new IllegalArgumentException("invalid header name or value");
             }
 
             headers.put(
