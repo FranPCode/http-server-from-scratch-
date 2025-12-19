@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTTP Server desde Cero</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+        }
+
+        .container {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        p {
+            color: #b8b8b8;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .counter {
+            font-size: 4rem;
+            font-weight: bold;
+            color: #00d4ff;
+            margin: 1rem 0;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1.5rem;
+        }
+
+        button {
+            padding: 0.8rem 2rem;
+            font-size: 1rem;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 212, 255, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .btn-increment {
+            background: linear-gradient(90deg, #00d4ff, #0099cc);
+            color: #fff;
+        }
+
+        .btn-decrement {
+            background: linear-gradient(90deg, #7b2cbf, #5a189a);
+            color: #fff;
+        }
+
+        .btn-reset {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        .status {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: rgba(0, 212, 255, 0.1);
+            border-radius: 10px;
+            font-size: 0.9rem;
+        }
+
+        .status span {
+            color: #00d4ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 HTTP Server</h1>
+        <p>Servidor HTTP construido desde cero con Java NIO Channels</p>
+        
+        <div class="counter" id="counter">0</div>
+        
+        <div class="buttons">
+            <button class="btn-decrement" onclick="decrement()">-</button>
+            <button class="btn-reset" onclick="reset()">Reset</button>
+            <button class="btn-increment" onclick="increment()">+</button>
+        </div>
+
+        <div class="status">
+            <p>Última acción: <span id="lastAction">Ninguna</span></p>
+            <p>Hora: <span id="currentTime">--:--:--</span></p>
+        </div>
+    </div>
+
+    <script>
+        let count = 0;
+        const counterEl = document.getElementById('counter');
+        const lastActionEl = document.getElementById('lastAction');
+        const currentTimeEl = document.getElementById('currentTime');
+
+        function updateCounter() {
+            counterEl.textContent = count;
+            counterEl.style.transform = 'scale(1.2)';
+            setTimeout(() => {
+                counterEl.style.transform = 'scale(1)';
+            }, 150);
+        }
+
+        function updateLastAction(action) {
+            lastActionEl.textContent = action;
+        }
+
+        function increment() {
+            count++;
+            updateCounter();
+            updateLastAction('Incrementar (+1)');
+        }
+
+        function decrement() {
+            count--;
+            updateCounter();
+            updateLastAction('Decrementar (-1)');
+        }
+
+        function reset() {
+            count = 0;
+            updateCounter();
+            updateLastAction('Reset (0)');
+        }
+
+        // Actualizar reloj cada segundo
+        function updateTime() {
+            const now = new Date();
+            currentTimeEl.textContent = now.toLocaleTimeString('es-ES');
+        }
+
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        console.log('🚀 HTTP Server desde cero - JavaScript cargado correctamente!');
+    </script>
+</body>
+</html>

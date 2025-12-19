@@ -47,7 +47,7 @@ public class SelectorHandler {
     private void accept(SelectionKey key) throws IOException {
         ServerSocketChannel server = (ServerSocketChannel) key.channel();
         SocketChannel client = server.accept();
-        ByteBuffer buffer = ByteBuffer.allocate(1024);
+        ByteBuffer buffer = ByteBuffer.allocate(8192);
         StringBuilder acumulated = new StringBuilder();
 
         client.configureBlocking(false);
@@ -103,7 +103,7 @@ public class SelectorHandler {
         if (router.exists(request.getResource())) {
             response = router.resolve(request);
         } else {
-            response = new Response().status(404).html("<h1>Pagina no encontrada</h1>");
+            response = new Response().status(404).view("not-found.html");
         }
 
         response.setBuffer(buffer);
@@ -114,6 +114,7 @@ public class SelectorHandler {
         buffer.clear();
         key.cancel();
         client.close();
+
     }
 
     public Selector getSelector() {

@@ -1,6 +1,12 @@
 package httpserver;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -9,7 +15,7 @@ public class Response {
     private String protocolVersion = "HTTP/1.1";
     private String status;
     private Map<String, String> headers = new HashMap<>();
-    private String body;
+    private ByteBuffer body;
     private ByteBuffer buffer;
 
     public Response status(int statusCode) throws IllegalArgumentException {
@@ -26,26 +32,30 @@ public class Response {
         return this;
     }
 
-    public Response body(String body) {
-        if (body.isEmpty()) {
-            throw new IllegalArgumentException("body is empty");
+    public Response view(String relativePath) throws IllegalArgumentException, RuntimeException {
+        if (relativePath.isEmpty()) {
+            throw new IllegalArgumentException("required view path");
         }
 
-        this.body = body;
-        this.headers.put("Content-Lenght", String.valueOf(body.length()));
-        this.headers.put("Content-Type", "*/*");
+        Path path = FileSystems.getDefault().getPath("public", relativePath);
 
-        return this;
-    }
-
-    public Response html(String html) {
-        if (html.isEmpty()) {
-            throw new IllegalArgumentException("html is empty");
+        if (!Files.exists(path)) {
+            throw new RuntimeException(String.format("file %s not found", relativePath));
         }
 
-        this.body = html;
+        try {
+            FileChannel file = FileChannel.open(path, StandardOpenOption.READ);
+            long fileSize = file.size();
+            this.body = ByteBuffer.allocate((int) fileSize);
+            file.read(this.body);
+            this.body.flip();
+            file.close();
+        } catch (IOException e) {
+            System.out.println("error opening reading file ");
+        }
+
         this.headers.put("Content-Type", "text/html; charset=UTF-8");
-        this.headers.put("Content-Lenght", String.valueOf(html.length()));
+        this.headers.put("Content-Length", String.valueOf(this.body.limit()));
         this.headers.put("Connection", "close");
 
         return this;
@@ -63,13 +73,13 @@ public class Response {
             message.append(String.format("%s: %s\r\n", entry.getKey(), entry.getValue()));
         }
 
-        message.append("\r\n\r\n");
+        message.append("\r\n");
+        this.buffer.put(message.toString().getBytes());
 
-        if (!this.body.isEmpty()) {
-            message.append(this.body);
+        if (this.body != null) {
+            this.buffer.put(this.body);
         }
 
-        this.buffer.put(message.toString().getBytes());
         return buffer;
     }
 
