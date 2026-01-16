@@ -41,6 +41,13 @@ public class Request {
     }
 
     private void parse(String request) throws IllegalArgumentException {
+        if (request.isBlank()) {
+            throw new IllegalArgumentException("request is empty");
+        }
+
+        if (!request.contains("\r\n\r\n")) {
+            throw new IllegalArgumentException("request is empty");
+        }
         String[] parts = request.split("\r\n\r\n", 2);
 
         String[] head = parts[0].split("\r\n");
@@ -54,14 +61,23 @@ public class Request {
         String[] fieldLines = Arrays.copyOfRange(head, 1, head.length);
         this.headers = RequestParser.headers(fieldLines);
 
-        if (headers.containsKey("content-lenght")) {
-            int contentLenght = Integer.parseInt(headers.get("content-lenght"));
-            if (body.length() != contentLenght) {
-                throw new IllegalArgumentException("content-lenght and body mismatch lenght");
+        if (!this.body.isBlank()
+                && (!this.headers.containsKey("content-type") || !this.headers.containsKey("content-length"))) {
+            throw new IllegalArgumentException("invalid headers");
+        }
+
+        if (this.body.isBlank() &&
+                (this.headers.containsKey("content-type") || this.headers.containsKey("content-length"))) {
+            throw new IllegalArgumentException("invalid headers");
+        }
+
+        if (this.headers.containsKey("content-length")) {
+            int contentLength = Integer.parseInt(this.headers.get("content-length"));
+            if (body.length() != contentLength) {
+                throw new IllegalArgumentException("content-length and body mismatch length");
             }
         }
 
-        this.headers = headers;
         this.completed = true;
     }
 
