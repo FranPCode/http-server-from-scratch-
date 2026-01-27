@@ -1,6 +1,7 @@
 package httpserver;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.FileSystems;
@@ -18,17 +19,8 @@ public class Response {
     private ByteBuffer body;
     private ByteBuffer buffer;
 
-    public Response status(int statusCode) throws IllegalArgumentException {
-        if (statusCode < 100 || statusCode > 600) {
-            throw new IllegalArgumentException("invalid status code");
-        }
-
-        switch (statusCode) {
-            case 200 -> this.status = "200 OK";
-            case 404 -> this.status = "404 NOT FOUND";
-            case 405 -> this.status = "405 METHOD NOT ALLOWED";
-        }
-
+    public Response status(HTTPStatusCode statusCode) {
+        this.status = statusCode.getStatusLine();
         return this;
     }
 
@@ -51,7 +43,7 @@ public class Response {
             this.body.flip();
             file.close();
         } catch (IOException e) {
-            System.out.println("error opening reading file ");
+            throw new UncheckedIOException("Failed to read file: " + path, e);
         }
 
         this.headers.put("Content-Type", "text/html; charset=UTF-8");
@@ -64,6 +56,10 @@ public class Response {
     public ByteBuffer build() {
         if (this.buffer == null) {
             throw new IllegalStateException("buffer not set");
+        }
+
+        if (this.status == null) {
+            throw new IllegalStateException("status is required");
         }
 
         StringBuilder message = new StringBuilder();
@@ -80,10 +76,19 @@ public class Response {
             this.buffer.put(this.body);
         }
 
+        buffer.flip();
         return buffer;
     }
 
     public void setBuffer(ByteBuffer buffer) {
         this.buffer = buffer;
+    }
+
+    public void setHeader(String headerName, Number value) {
+        this.headers.put(headerName, String.valueOf(value));
+    }
+
+    public void setHeader(String headerName, String value) {
+        this.headers.put(headerName, value);
     }
 }
