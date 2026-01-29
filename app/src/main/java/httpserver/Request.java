@@ -74,7 +74,9 @@ public class Request {
         if (this.headers.containsKey("content-length")) {
             int contentLength = Integer.parseInt(this.headers.get("content-length"));
             if (body.length() != contentLength) {
-                throw new IllegalArgumentException("content-length and body mismatch length");
+                throw new IllegalArgumentException(
+                        "content-length and body mismatch length header: " + headers.get("Content-Lenth") + " body: "
+                                + body.length());
             }
         }
 

@@ -91,4 +91,16 @@ public class Response {
     public void setHeader(String headerName, String value) {
         this.headers.put(headerName, value);
     }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public Map<String, String> getHeaders() {
+        return headers;
+    }
+
+    public String getProtocolVersion() {
+        return protocolVersion;
+    }
 }
