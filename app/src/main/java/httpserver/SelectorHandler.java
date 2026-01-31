@@ -13,6 +13,7 @@ import httpserver.router.Router;
 public class SelectorHandler {
     private Selector selector;
     private Router router;
+    private boolean isRunning = true;
 
     public SelectorHandler(Router router) throws IOException {
         this.selector = Selector.open();
@@ -20,7 +21,7 @@ public class SelectorHandler {
     }
 
     public void start() throws IOException {
-        while (true) {
+        while (isRunning) {
             this.selector.select(10000);
 
             Iterator<SelectionKey> keys = selector.selectedKeys().iterator();
@@ -84,9 +85,18 @@ public class SelectorHandler {
         System.out.println(message);
 
         if (message.toString().contains("\r\n\r\n")) {
-            Request request = new Request(message.toString());
-            if (request.isCompleted()) {
-                state.setRequest(request);
+            try {
+                Request request = new Request(message.toString());
+                if (request.isCompleted()) {
+                    state.setRequest(request);
+                    buffer.clear();
+                    key.interestOps(SelectionKey.OP_WRITE);
+                }
+            } catch (IllegalArgumentException e) {
+                System.err.println("Bad request: " + e.getMessage());
+                Response errorResponse = new Response()
+                        .status(HTTPStatusCode.BAD_REQUEST);
+                state.setErrorResponse(errorResponse);
                 buffer.clear();
                 key.interestOps(SelectionKey.OP_WRITE);
             }
@@ -97,18 +107,27 @@ public class SelectorHandler {
         SocketChannel client = (SocketChannel) key.channel();
         ClientState state = (ClientState) key.attachment();
         ByteBuffer buffer = state.getBuffer();
-        Request request = state.getRequest();
+        Response errorResponse = state.getErrorResponse();
 
         Response response;
-        if (router.exists(request.getResource())) {
-            response = router.resolve(request);
+
+        if (errorResponse != null) {
+            // Si hay una respuesta de error, usarla directamente
+            response = errorResponse;
         } else {
-            response = new Response().status(404).view("not-found.html");
+            // Flujo normal con request válido
+            Request request = state.getRequest();
+            if (router.exists(request.getResource())) {
+                response = router.resolve(request);
+            } else {
+                response = new Response()
+                        .status(HTTPStatusCode.NOT_FOUND)
+                        .view("not-found.html");
+            }
         }
 
         response.setBuffer(buffer);
         response.build();
-        buffer.flip();
         client.write(buffer);
 
         buffer.clear();
@@ -120,12 +139,17 @@ public class SelectorHandler {
     public Selector getSelector() {
         return this.selector;
     }
+
+    public void stop() {
+        this.isRunning = false;
+    }
 }
 
 class ClientState {
     private ByteBuffer buffer;
     private StringBuilder acumulated;
     private Request request;
+    private Response errorResponse;
 
     public ClientState(ByteBuffer buffer, StringBuilder acumulated) {
         this.buffer = buffer;
@@ -146,6 +170,14 @@ class ClientState {
 
     public void setRequest(Request request) {
         this.request = request;
+    }
+
+    public Response getErrorResponse() {
+        return this.errorResponse;
+    }
+
+    public void setErrorResponse(Response errorResponse) {
+        this.errorResponse = errorResponse;
     }
 
 }
